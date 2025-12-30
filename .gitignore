@@ -1,0 +1,23 @@
+cd /home/sysadmin/development-docker
+
+cat > .gitignore <<'EOF'
+# ---- Secrets / env ----
+.env
+**/.env
+*.env
+
+# ---- Traefik cert storage (contains private keys) ----
+**/cloudflare-acme.json
+**/acme*.json
+**/certs/
+**/data/certs/
+
+# ---- Homepage / app data that shouldn't be in git ----
+**/logs/
+**/*.log
+
+# ---- OS/editor noise ----
+.DS_Store
+.idea/
+.vscode/
+EOF
