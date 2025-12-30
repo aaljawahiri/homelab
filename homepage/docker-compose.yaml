@@ -1,0 +1,64 @@
+services:
+  homepage:
+    # Homepage dashboard container
+    image: ghcr.io/gethomepage/homepage:latest
+    container_name: homepage-prod
+
+    networks:
+      # Network shared with Traefik so it can reverse-proxy this service
+      - reverse-proxy
+
+      # Default Compose network (useful for internal container-to-container access later)
+      - default
+
+    labels:
+      # Explicitly allow Traefik to see and expose this container
+      - traefik.enable=true
+
+      # Force Traefik to route traffic over the reverse-proxy network
+      # This avoids Traefik accidentally choosing the default bridge IP
+      - traefik.docker.network=reverse-proxy
+
+      # HTTPS router configuration
+      - traefik.http.routers.homepage-https.entrypoints=websecure
+      - traefik.http.routers.homepage-https.rule=Host(`homepage.docker-prod.routessh.com`)
+      - traefik.http.routers.homepage-https.tls=true
+      - traefik.http.routers.homepage-https.tls.certresolver=cloudflare
+
+      # HTTP router (disabled on purpose)
+      # HTTP → HTTPS redirection is handled globally by Traefik
+      # - traefik.http.routers.homepage-http.rule=Host(`homepage.k3s-master.routessh.com`)
+      # - traefik.http.routers.homepage-http.entrypoints=web
+
+    volumes:
+      # Homepage configuration (services, widgets, bookmarks, etc.)
+      - ./config:/app/config
+
+      # Custom images used by Homepage tiles
+      - ./images:/app/public/images
+
+      # Custom icons for services
+      - ./icons:/app/public/icons
+
+    env_file:
+      # Centralised secrets and API keys (Proxmox, Synology, UniFi, etc.)
+      - .env
+
+    environment:
+      # Required so Homepage accepts requests from reverse proxies / custom domains
+      HOMEPAGE_ALLOWED_HOSTS: '*'
+
+      # File ownership inside the container (match host user/group)
+      PUID: 1000
+      PGID: 1000
+
+      # HOMEPAGE_VAR_* values are intentionally not defined here
+      # They are loaded from the .env file to keep secrets out of Git
+
+    restart: unless-stopped
+
+networks:
+  reverse-proxy:
+    # Re-use the external Traefik network instead of creating a new one
+    external: true
+    name: reverse-proxy

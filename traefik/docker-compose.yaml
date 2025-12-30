@@ -1,0 +1,89 @@
+---
+# Traefik container definition
+# This file controls HOW Traefik runs.
+# Core behaviour (ACME, entrypoints, providers) lives in traefik.yaml.
+
+services:
+  traefik:
+    image: traefik:v3.6
+    container_name: traefik-prod
+
+    # CLI flags are intentionally NOT used.
+    # Static config is handled via traefik.yaml instead.
+    #
+    # command:
+    #  - "--api.insecure=true"
+    #  - "--providers.docker=true"
+    #  - "--entrypoints.web.address=:80"
+
+    ports:
+      # HTTP → used only for redirecting to HTTPS
+      - "80:80"
+
+      # HTTPS → all real traffic enters here
+      - "443:443"
+
+      # Dashboard is NOT exposed directly on 8080, commented out.
+      # It is routed securely via HTTPS instead
+      # - "8080:8080"
+
+    # Load secrets & variables from .env
+    env_file:
+      - .env
+
+    labels:
+      - traefik.enable=true
+
+      # ==============================
+      # Traefik Dashboard (HTTPS)
+      # ==============================
+
+      # Public hostname for dashboard
+      - traefik.http.routers.traefik-dashboard.rule=Host(`traefik.docker-prod.routessh.com`)
+
+      # HTTPS only
+      - traefik.http.routers.traefik-dashboard.entrypoints=websecure
+      - traefik.http.routers.traefik-dashboard.tls=true
+      - traefik.http.routers.traefik-dashboard.tls.certresolver=cloudflare
+
+      # Traefik’s built-in dashboard/API service
+      - traefik.http.routers.traefik-dashboard.service=api@internal
+
+      # Basic Auth protection for dashboard
+      # Credentials are stored hashed in .env
+      - traefik.http.routers.traefik-dashboard.middlewares=traefik-auth
+      - traefik.http.middlewares.traefik-auth.basicauth.users=${TRAEFIK_DASHBOARD_CREDENTIALS}
+
+      # ==============================
+      # Internal API (not internet-facing)
+      # ==============================
+
+      # Used by internal tools (e.g. Homepage widget)
+      - traefik.http.routers.traefik-api.rule=PathPrefix(`/api`)
+      - traefik.http.routers.traefik-api.entrypoints=internal
+      - traefik.http.routers.traefik-api.service=api@internal
+
+    volumes:
+      # Keep container time in sync with host
+      - /etc/localtime:/etc/localtime:ro
+
+      # Required so Traefik can read Docker labels
+      - /var/run/docker.sock:/var/run/docker.sock
+
+      # Static Traefik configuration (read-only)
+      - ./config/traefik.yaml:/etc/traefik/traefik.yaml:ro
+
+      # Persistent storage for TLS certificates
+      - ./data/certs/:/etc/traefik/certs/:rw
+
+    networks:
+      # Shared network for Traefik + all routed containers
+      - reverse-proxy
+
+    restart: unless-stopped
+
+networks:
+  reverse-proxy:
+    # External network so multiple compose projects
+    # can use the same Traefik instance
+    external: true

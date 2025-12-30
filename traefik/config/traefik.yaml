@@ -1,0 +1,68 @@
+global:
+  # Turn off version checks + anonymous telemetry (nice for homelabs)
+  checkNewVersion: false
+  sendAnonymousUsage: false
+
+log:
+  # DEBUG is great while setting things up; switch to INFO later if you want less noise
+  level: DEBUG
+
+api:
+  # Enable the dashboard + API, but DO NOT expose it openly
+  # Access is controlled by your router labels (Host rule + TLS + auth)
+  dashboard: true
+  insecure: false
+
+entryPoints:
+  web:
+    # Plain HTTP entrypoint (mainly used to redirect to HTTPS)
+    address: :80
+    http:
+      redirections:
+        entryPoint:
+          # Force HTTP → HTTPS
+          to: websecure
+          scheme: https
+
+  websecure:
+    # HTTPS entrypoint (where your real traffic should land)
+    address: :443
+
+  internal:
+    # Private entrypoint for internal-only access (e.g. Homepage widget hitting Traefik API)
+    # You normally DO NOT publish this port to the LAN/WAN.
+    address: :8888
+
+certificatesResolvers:
+  # ACME / Let's Encrypt via Cloudflare DNS challenge
+  cloudflare:
+    acme:
+      # Email used by Let's Encrypt (expiry / important notices)
+      email: "adil.aljawahiri@icloud.com"
+
+      # Where Traefik stores certs + account data (must be on a persistent volume)
+      storage: /etc/traefik/certs/cloudflare-acme.json
+
+      # Production Let's Encrypt endpoint
+      # (Use the staging CA if you're testing to avoid rate limits)
+      caServer: "https://acme-v02.api.letsencrypt.org/directory"
+
+      # ECDSA certs (smaller/faster). Works fine for modern clients.
+      keyType: EC256
+
+      dnsChallenge:
+        # Use Cloudflare API token from your .env / container environment
+        provider: cloudflare
+
+        # DNS resolvers Traefik uses to check TXT record propagation
+        resolvers:
+          - "1.1.1.1:53"
+          - "8.8.8.8:53"
+
+providers:
+  docker:
+    # Read Docker labels from the local Docker socket
+    endpoint: "unix:///var/run/docker.sock"
+
+    # Safety: only expose containers that explicitly set traefik.enable=true
+    exposedByDefault: false

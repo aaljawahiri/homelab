@@ -1,0 +1,137 @@
+---
+# Homepage "services.yaml"
+# This file controls the tiles/groups shown on your Homepage dashboard.
+# Structure is:
+# - Group Name:
+#     - Service Name:
+#         key: value
+
+- Networking:
+    - UniFi Cloud:
+        # Direct link you click from the dashboard tile
+        href: https://unifi.ui.com
+        icon: unifi.png
+        description: UniFi Network Stack
+
+        # Homepage will periodically check this URL and show status (green/red)
+        # Use siteMonitor for URLs (HTTP/HTTPS), and ping for IP/hostnames.
+        siteMonitor: https://10.172.192.1
+
+        widget:
+            # Widget pulls live stats from UniFi (requires an API key)
+            # Docs: https://gethomepage.dev/widgets/services/unifi-controller/
+            type: unifi
+            url: https://10.172.192.1
+
+            # Pulled from your .env (passed into the Homepage container)
+            key: {{HOMEPAGE_VAR_UNIFI_KEY}}
+
+            # Optional: controls which metrics show under the tile (max 4)
+            fields:
+                - wan
+                - uptime
+                - wlan_users
+                - lan_users
+
+    - Traefik Reverse Proxy:
+        href: https://traefik.docker-prod.routessh.com
+        icon: traefik.png
+        description: Reverse Proxy for all Web Apps
+        siteMonitor: https://traefik.docker-prod.routessh.com
+
+        widget:
+            # Traefik widget reads Traefik’s API (NOT the dashboard URL)
+            # Because your Traefik API is exposed on the internal entryPoint (:8888),
+            # we point Homepage to the container name + port (Docker internal networking).
+            type: traefik
+            url: http://traefik-prod:8888
+
+    - UniFi 8 Port Switch:
+        # This is just a link tile (no monitoring/widget)
+        href: https://unifi.ui.com/consoles/8478489CBAC00000000008D74C2000000000095028590000000067CFF704:638202099/network/default/ports
+        icon: unifi.png
+        description: Link to Port Manager on the USW Pro 8 PoE
+
+- Infrastructure and Data:
+    - Proxmox:
+        href: https://proxmox.routessh.com:8006
+        icon: proxmox.png
+        description: Home of VMs & Containers :)
+        siteMonitor: https://proxmox.routessh.com:8006
+
+        widget:
+            # Docs: https://gethomepage.dev/widgets/services/proxmox/
+            type: proxmox
+            url: https://proxmox.routessh.com:8006
+
+            # Pulled from .env (recommended to use an API token account/role)
+            username: {{HOMEPAGE_VAR_PROXMOX_USERNAME}}
+            password: {{HOMEPAGE_VAR_PROXMOX_PASSWORD}}
+
+            # Proxmox node name as it appears in the UI
+            node: proxmox
+
+            # true = allow self-signed / untrusted cert (common in homelabs)
+            insecure: true
+
+    - Synology NAS:
+        href: https://nas01.routessh.com:5001
+        icon: synology.png
+        description: Backups, File Storage & More!
+        siteMonitor: https://nas01.routessh.com:5001
+
+        widget:
+            # Docs: https://gethomepage.dev/widgets/services/diskstation/
+            type: diskstation
+            url: https://nas01.routessh.com:5001
+            username: {{HOMEPAGE_VAR_SYNOLOGY_USERNAME}}
+            password: {{HOMEPAGE_VAR_SYNOLOGY_PASSWORD}}
+
+            # Same idea as Proxmox: accept self-signed certs
+            insecure: true
+
+    - InfluxDB:
+        # Link-only tile for now (no monitor/widget configured)
+        href: https://ixdb-prod-1.srv-prod-2.home.clcreative.de/
+        icon: influxdb.png
+        description: ixdb-prod-1 on srv-prod-2
+
+- Management:
+    - Portainer:
+        href: https://portainer-demo-1.srv-demo-1.home.clcreative.de
+        icon: portainer.png
+        description: portainer-demo-1 on srv-demo-1
+
+        widget:
+            # Portainer widget typically needs an API key/token
+            type: portainer
+            url: https://portainer-demo-1.srv-demo-1.home.clcreative.de
+
+            # Portainer environment ID (matches Portainer UI)
+            env: 2
+
+            # Pulled from .env
+            key: {{HOMEPAGE_VAR_PORTAINER_KEY}}
+
+    - Dockge:
+        # Link-only tile
+        href: https://dockge-demo-1.srv-demo-1.home.clcreative.de
+        icon: si-docker-#2496ED
+        description: dockge-demo-1 on srv-demo-1
+
+- My Second Group:
+    - My Second Service:
+        href: http://localhost/
+        description: Homepage is the best
+
+- My Third Group:
+    - My Third Service:
+        href: http://localhost/
+        description: Homepage is 😎
+
+# Notes / quick checks:
+# - To verify Homepage received your env vars:
+#   sudo docker exec -it homepage-prod sh -lc 'env | grep HOMEPAGE_VAR_'
+#
+# - Use "siteMonitor" for full URLs (http/https).
+# - Use "ping" when you only have an IP/hostname and want ICMP checks.
