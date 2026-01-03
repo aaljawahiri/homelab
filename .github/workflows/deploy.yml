@@ -18,8 +18,24 @@ jobs:
           port: ${{ secrets.DEPLOY_PORT }}
           script: |
             set -e
+
+            # Update repo first (root)
             cd /home/sysadmin/development-docker
             git pull --ff-only
+
+            # Deploy Traefik (folder compose)
+            cd /home/sysadmin/development-docker/traefik
             docker compose pull
-            docker compose up -d
-            docker compose ps
+            docker compose down && docker compose up -d
+
+            # Deploy Homepage (folder compose)
+            cd /home/sysadmin/development-docker/homepage
+            docker compose pull
+            docker compose down && docker compose up -d
+
+            # Deploy Twingate (folder compose)
+            cd /home/sysadmin/development-docker/twingate
+            docker compose pull
+            docker compose down && docker compose up -d
+
+            docker ps --format "table {{.Names}}\t{{.Status}}"
