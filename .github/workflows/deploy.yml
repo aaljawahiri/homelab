@@ -38,4 +38,9 @@ jobs:
             docker compose pull
             docker compose down && docker compose up -d
 
+            # Deploy Uptime Kuma (folder compose)
+            cd /home/sysadmin/development-docker/uptime-kuma
+            docker compose pull
+            docker compose down && docker compose up -d
+
             docker ps --format "table {{.Names}}\t{{.Status}}"
