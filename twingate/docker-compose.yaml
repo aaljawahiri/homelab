@@ -1,7 +1,7 @@
 services:
   twingate:
     container_name: tg-connector01
-    image: twingate/connector:latest
+    image: twingate/connector:1.82.0
     env_file:
       - .env
     environment:
