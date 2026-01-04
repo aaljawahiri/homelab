@@ -39,7 +39,7 @@ jobs:
             docker compose down && docker compose up -d
 
             # Deploy Uptime Kuma (folder compose)
-            cd /home/sysadmin/development-docker/uptime-kuma
+            cd /home/sysadmin/development-docker/uptimekuma
             docker compose pull
             docker compose down && docker compose up -d
 
